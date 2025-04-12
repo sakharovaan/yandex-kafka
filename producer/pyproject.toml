@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "producer"
+version = "0.1.0"
+description = ""
+authors = ["Sakharov Alexander <mail@asakharov.ru>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.115.12"
+uvicorn = "^0.34.0"
+aiokafka = "^0.12.0"
+pydantic-settings = "^2.8.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
