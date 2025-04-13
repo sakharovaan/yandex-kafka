@@ -11,4 +11,5 @@ class KafkaConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="PRODUCER_") 
 
     KAFKA_BOOTSTRAP_SERVERS: str
+    SCHEMA_REGISTRY_SERVER: str
     KAFKA_TOPIC: str

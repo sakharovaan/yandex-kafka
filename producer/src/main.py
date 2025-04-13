@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from aiokafka import AIOKafkaProducer
+from confluent_kafka.schema_registry import SchemaRegistryClient
 
 from src.producer import routers as kafka_routers
 from src.config import KafkaConfig
@@ -27,6 +28,7 @@ async def shutdown_producer(kafka_producer: AIOKafkaProducer):
 async def lifespan(app: FastAPI):
     """Добавление kafka producer в объект FastApi, чтобы не запускать producer при каждом запросе"""
     app.kafka_producer = await start_producer()
+    app.schema_client = SchemaRegistryClient(dict(url=config.SCHEMA_REGISTRY_SERVER))
     app.include_router(kafka_routers.all_routers)
     yield
     await shutdown_producer(app.kafka_producer)

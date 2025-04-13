@@ -7,12 +7,12 @@ from fastapi import HTTPException
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from aiokafka import AIOKafkaProducer
+from confluent_kafka.schema_registry.avro import AvroSerializer, SerializationContext
 
 from src.producer.schemas import Message
-from src.main import app, config
+from src.main import config
 
 event_loop = asyncio.get_event_loop()
-
 
 router = APIRouter()
 
@@ -21,5 +21,9 @@ router = APIRouter()
     description="Send message to kafka",
 )
 async def send_kafka(message: Message, request: Request) -> None:
-    message_to_produce = json.dumps(message.model_dump()).encode(encoding="utf-8")
-    await request.app.kafka_producer.send(value=message_to_produce, topic=config.KAFKA_TOPIC)
+    
+    serializer = AvroSerializer(request.app.schema_client, json.dumps(message.avro_schema()))
+
+    await request.app.kafka_producer.send(value=serializer(message.model_dump(),
+                                                           SerializationContext(config.KAFKA_TOPIC, "message")), 
+                                                           topic=config.KAFKA_TOPIC)

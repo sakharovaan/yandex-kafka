@@ -1,5 +1,4 @@
-from pydantic import BaseModel
+from pydantic_avro.base import AvroBase
 
-
-class Message(BaseModel):
+class Message(AvroBase):
     text: str

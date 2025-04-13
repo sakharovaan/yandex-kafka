@@ -12,6 +12,8 @@ fastapi = "^0.115.12"
 uvicorn = "^0.34.0"
 aiokafka = "^0.12.0"
 pydantic-settings = "^2.8.1"
+confluent-kafka = {extras = ["avro"], version = "^2.9.0"}
+pydantic-avro = "^0.9.0"
 
 
 [build-system]
