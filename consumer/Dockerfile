@@ -11,6 +11,6 @@ RUN pip install poetry && \
     poetry config virtualenvs.create false && \
     poetry install --no-root
 
-HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD curl -sS http://localhost:9000/api/v1/health/ping | grep -q pong || exit 1
+HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD curl -sS http://localhost:9001/api/v1/health/ping | grep -q pong || exit 1
 
-EXPOSE 9000 
+EXPOSE 9001 

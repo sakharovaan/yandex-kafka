@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "producer"
+name = "consumer"
 version = "0.1.0"
 description = ""
 authors = ["Sakharov Alexander <mail@asakharov.ru>"]
@@ -14,6 +14,7 @@ aiokafka = "^0.12.0"
 pydantic-settings = "^2.8.1"
 confluent-kafka = {extras = ["avro"], version = "^2.9.0"}
 pydantic-avro = "^0.9.0"
+apscheduler = "^3.11.0"
 loguru = "^0.7.3"
 
 
