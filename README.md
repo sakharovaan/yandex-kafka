@@ -1,94 +1,42 @@
-## Как развернуть однонодовый Kafka-кластер
+## Практическая работа 1
 
-1. Установить docker и docker-compose для Вашей системы
-2. Создать файл docker-compose.yml со следующим содержанием (протокол KRaft):
+Результаты описаны в [README-kafka.md](README-kafka.md)
 
-```yaml
-version: "3.9"
+## Практическая работа 2
 
-services:
-  kafka-0:
-    image: bitnami/kafka:3.4
-    ports:
-      - "9094:9094"
-    environment:
-      - KAFKA_ENABLE_KRAFT=yes
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=broker,controller
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093
-      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:9092,EXTERNAL://127.0.0.1:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    volumes:
-      - kafka_0_data:/bitnami/kafka
+### Архитектура проекта
 
-  ui:
-    image: provectuslabs/kafka-ui:v0.7.0
-    ports:
-      - "8080:8080"
-    environment:
-      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka-0:9092
-      - KAFKA_CLUSTERS_0_NAME=kraft 
+Архитектура продьюсера и консьюмера схожая. Здесь опишем общие для обоих приложений положения.
 
-volumes:
-  kafka_0_data: 
-```
+* Зависимости управляются и устанавливаются при помощи poetry
+* Приложения написаны с использованием фреимворка FastAPI, реализующего обработку запросов при помощи asyncio. 
+* FastAPI запускается при помощи сервера Uvicorn. 
+* Для непосредственной работы с Kafka используется библиотека aiokafka, для (де)сериализации и работы с Schema Registry используется библиотека confluent-kafka
+* Как основа для сериализации и валидации данных выбран фреимворк pydantic, c библиотекой pydantic-avro для генерации Avro-схемы из классов Pydantic
+* За подключение и валидацию настроек также отвечает Pydantic, при помощи библиотеки pydantic-settings он считывает информацию из .env-файлов
+* Логгирование осуществляется при помощи библиотеки loguru
 
-3. Запустить Kafka и UI при помощи команды `docker-compose up -d`
+### Структура проекта
 
-## Как проверить, что кластер работает
+* Исходный код обоих приложений находится в папках src в папках consumer/producer
+* Для запуска приложения используется файл src/main.py
+    * В нём происходит объявление FastAPI и структур, необходимых для запуска. Клиенты kafka и schema registry хранятся в структуре app FastAPI, которая доступна при каждом запросе, чтобы не запускать консьюмер/продьюсер каждый раз.
+* Конфигурация объявляется в файле src/config.py
+    * В нём происходит объявление необходимых переменных для работы приложения и их типа
+* В файле src/(consumer|producer)/schemas.py находится схема Pydantic для валидации запросов FastAPI и сообщений Kafka 
+* В файле src/(consumer|producer)/routers.py подключаются маршруты FastAPI
+* В каталоге src/(consumer|producer)/endpoints хранятся методы, которые вызываются FastAPI. У обоих приложений есть хелсчеки
 
-1. `docker ps` должен показывать все запущенные контейнеры как "Up", перезапусков быть не должно
-2. в логах `docker compose logs` не должно быть ошибок
-3. команда `docker exec -it kafka-kafka-0-1 kafka-topics.sh --list --bootstrap-server kafka-0:9092` должна успешно завершаться и выдавать пустой список
-4. в kafka ui по адресу http://localhost:8080/ должен отображаться брокер
+Про реализацию отдельных приложений можно почитать в соответствующих readme:
+* producer: [producer/README.md](producer/README.md)
+* consumer: [producer/README.md](consumer/README.md)
 
-## Какие параметры конфигурации использовали и что они означают
+### Проверка работы приложения
 
-* KAFKA_ENABLE_KRAFT=yes
+Поднимем все окружения и отправим 1000 сообщений в kafka через producer
 
-Включение протокола KRaft (без Zookeeper)
+* `docker compose up -d`
+* `for i in $(seq 1 1000); do curl -vv -XPOST -d '{"text": "message"}' -H "Content-Type: application/json" localhost:9000/api/v1/kafka/send; done`
+* `docker compose logs -f`
 
-* ALLOW_PLAINTEXT_LISTENER=yes
-
-Включение возможности работать без tls
-
-* KAFKA_CFG_NODE_ID=0
-
-ID ноды в кластере
-
-* KAFKA_CFG_PROCESS_ROLES=broker,controller
-
-Включение роли broker и controller для ноды (хранение данных + управление конфигурацией)
-
-* KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-
-Указание listener CONTROLLER для связи с другими узлами
-
-* KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093
-
-Список контроллеров кластера
-
-* KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
-
-ID кластера KRaft
-
-* KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-
-Список listeners, на которых kafka слушает соединения
-
-* KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:9092,EXTERNAL://127.0.0.1:9094
-
-Listeners, которые Kafka предлагает для подключегния клиентов
-
-* KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-
-Указание, что все listeners используют протокол без шифрования данных
-
-## Как проверить работу Kafka через Kafka UI
-
-1. В Dashboard должен отображаться один кластер в статусе Online
-2. В brokers должен отображаться один брокер с "зелёной галочкой"
+В логах должна выводиться обработка отправленных сообщений консьюмерами

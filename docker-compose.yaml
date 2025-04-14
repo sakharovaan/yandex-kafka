@@ -1,6 +1,58 @@
 version: "3.9"
 
 services:
+  producer:
+    build: 
+      context: producer
+      depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+      - schema-registry
+    ports:
+      - "9000:9000"
+    environment:
+      - PRODUCER_KAFKA_BOOTSTRAP_SERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
+      - PRODUCER_SCHEMA_REGISTRY_SERVER=http://schema-registry:8081
+      - PRODUCER_KAFKA_TOPIC=practicum
+
+  consumer-single:
+    build: 
+      context: consumer
+      depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+      - schema-registry
+    deploy:
+      mode: replicated
+      replicas: 2
+    environment:
+      - CONSUMER_KAFKA_BOOTSTRAP_SERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
+      - CONSUMER_SCHEMA_REGISTRY_SERVER=http://schema-registry:8081
+      - CONSUMER_KAFKA_TOPIC=practicum
+      - CONSUMER_GROUP_ID=single-group
+      - CONSUMER_MESSAGES_BATCH_MIN=1
+      - CONSUMER_MESSAGES_BATCH_MAX=1
+      - CONSUMER_AUTO_COMMIT=true
+      - CONSUMER_POLL_INTERVAL_SECONDS=10
+
+  consumer-batch:
+    build: 
+      context: consumer
+    deploy:
+      mode: replicated
+      replicas: 2
+    environment:
+      - CONSUMER_KAFKA_BOOTSTRAP_SERVERS=kafka-0:9092,kafka-1:9092,kafka-2:9092
+      - CONSUMER_SCHEMA_REGISTRY_SERVER=http://schema-registry:8081
+      - CONSUMER_KAFKA_TOPIC=practicum
+      - CONSUMER_GROUP_ID=batch-group
+      - CONSUMER_MESSAGES_BATCH_MIN=10
+      - CONSUMER_MESSAGES_BATCH_MAX=10
+      - CONSUMER_AUTO_COMMIT=false
+      - CONSUMER_POLL_INTERVAL_SECONDS=10
+
   kafka-0:
     image: bitnami/kafka:3.4
     ports:

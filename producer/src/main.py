@@ -15,6 +15,8 @@ async def start_producer():
     """Запуск Kafka Producer"""
     kafka_producer = AIOKafkaProducer(
             bootstrap_servers=config.KAFKA_BOOTSTRAP_SERVERS,
+            acks="all",
+            enable_idempotence=True
     )
     await kafka_producer.start()
     return kafka_producer
