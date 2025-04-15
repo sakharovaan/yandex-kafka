@@ -33,6 +33,11 @@
 
 ### Проверка работы приложения
 
+Поднимем kafka и создадим топик
+
+* `docker compose up -d kafka-0 kafka-1 kafka-2`
+* `docker compose exec kafka-0 kafka-topics.sh --create --topic practicum --bootstrap-server localhost:9092 --partitions 3 --replication-factor 2`
+
 Поднимем все окружения и отправим 1000 сообщений в kafka через producer
 
 * `docker compose up -d`
